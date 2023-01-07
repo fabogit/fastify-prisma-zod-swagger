@@ -1,0 +1,1 @@
+# fastify-prisma-zod-swagger
