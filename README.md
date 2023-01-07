@@ -8,15 +8,23 @@ if there is no `package.json` file:
 
 - `npx tsc --init `
 
-- `npm i @prisma/client fastify fastify-zod zod zod-to-json-schema fastify-jwt fastify-swagger `
+- `npm i prisma @prisma/client fastify fastify-zod zod zod-to-json-schema fastify-jwt fastify-swagger `
 
 - `npm i -D ts-node-dev typescript @types/node`
 
 - `npm run dev`
 
-## Initialise prisma
+###  Initialise prisma
 
 `npx prisma init --datasource-provider postgresql`
+
+### Turn your database schema into a Prisma schema
+
+`npx prisma db pull`
+
+### Generate prisma client
+
+`npx prisma generate`
 
 ### Migrate the schema
 
