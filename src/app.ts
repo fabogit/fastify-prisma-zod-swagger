@@ -13,42 +13,48 @@ export const server = Fastify({ logger: true });
 // 	origin: ["localhost:9001"],
 // });
 
+declare module "fastify" {
+  export interface FastifyInstance {
+    authenticate: any;
+  }
+}
+
 // JWT
 server.register(fjwt, {
-	secret: process.env.JWT_SECRET || "supersecret",
+  secret: "supersecret",
 });
 server.decorate(
-	"authenticate",
-	async (request: FastifyRequest, reply: FastifyReply) => {
-		try {
-			await request.jwtVerify();
-		} catch (error) {
-			return reply.send(error);
-		}
-	}
+  "authenticate",
+  async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      await request.jwtVerify();
+    } catch (error) {
+      return reply.send(error);
+    }
+  }
 );
 
 // healthcheck
 server.get("/healthcheck", async () => {
-	return { status: "OK" };
+  return { status: "OK" };
 });
 
 async function main() {
-	// schemas
-	for (const schema of userSchemas) {
-		server.addSchema(schema);
-	}
+  // schemas
+  for (const schema of userSchemas) {
+    server.addSchema(schema);
+  }
 
-	// routes
-	server.register(userRoutes, { prefix: "api/users" });
+  // routes
+  server.register(userRoutes, { prefix: "api/users" });
 
-	try {
-		await server.listen({ port: 3001, host: "0.0.0.0" });
-		console.log(`✅ Server running`);
-	} catch (error) {
-		console.error(`❌ Server stopped,`, error);
-		process.exit(1);
-	}
+  try {
+    await server.listen({ port: 3001, host: "0.0.0.0" });
+    console.log(`✅ Server running`);
+  } catch (error) {
+    console.error(`❌ Server stopped,`, error);
+    process.exit(1);
+  }
 }
 
 main();
