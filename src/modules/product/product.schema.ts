@@ -3,8 +3,8 @@ import { buildJsonSchemas } from "fastify-zod";
 
 const productInput = {
   title: z.string(),
-  price: z.string(),
   content: z.string().optional(),
+  price: z.number(),
 };
 
 const productGenerated = {
