@@ -1,6 +1,9 @@
 import { FastifyReply, FastifyRequest } from "fastify";
-import { CreateUserInput } from "./user.schema";
-import { createUser } from "./user.service";
+
+import { server } from "../../app";
+import { isPasswordCorrect } from "../../utils/hash";
+import { CreateUserInput, LoginRequest } from "./user.schema";
+import { createUser, findUserByEmail } from "./user.service";
 
 export async function registerUserHandler(
 	request: FastifyRequest<{
@@ -18,4 +21,35 @@ export async function registerUserHandler(
 		console.log(error);
 		return reply.code(500).send(error);
 	}
+}
+
+export async function loginHandler(
+	request: FastifyRequest<{ Body: LoginRequest; }>,
+	reply: FastifyReply
+) {
+	const body = request.body;
+
+	// find user by email
+	const user = await findUserByEmail(body.email);
+	if (!user)
+		return reply.code(401).send({
+			message: "Invalid email/password",
+		});
+
+	// verify pwd
+	const correctPassword = isPasswordCorrect({
+		candidatePassword: body.password,
+		salt: user.salt,
+		hash: user.password,
+	});
+
+	if (correctPassword) {
+		const { password, salt, ...rest } = user;
+		// generate accessToken
+		return { accesToken: server.jwt.sign(rest) };
+	}
+	return reply.code(401).send({
+		message: "Invalid email/password",
+	});
+	// respond
 }

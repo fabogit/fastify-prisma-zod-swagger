@@ -23,9 +23,11 @@
   },
   "homepage": "https://github.com/fabogit/fastify-prisma-zod-swagger#readme",
   "dependencies": {
+    "@fastify/cors": "^8.2.0",
+    "@fastify/env": "^4.2.0",
+    "@fastify/jwt": "^6.5.0",
     "@prisma/client": "^4.8.1",
     "fastify": "^4.11.0",
-    "fastify-jwt": "^4.2.0",
     "fastify-swagger": "^5.2.0",
     "fastify-zod": "^1.2.0",
     "zod": "^3.20.2",
