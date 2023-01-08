@@ -15,6 +15,8 @@ export async function getProducts() {
       id: true,
       title: true,
       price: true,
+			createdAt: true,
+			updatedAt: true,
       content: true,
       owner: {
         select: {
