@@ -10,6 +10,7 @@ export async function createProductHandler(
 ) {
   const product = await createProduct({
     ...request.body,
+		// fix typing fastify/jwt
     ownerId: request.user.id,
   });
 }
