@@ -21,7 +21,7 @@ async function userRoutes(server: FastifyInstance) {
       schema: {
         body: $ref("createUserSchema"),
         response: {
-          201: $ref("createUserResponseSchema"),
+          201: $ref("createUserReplySchema"),
         },
       },
     },
