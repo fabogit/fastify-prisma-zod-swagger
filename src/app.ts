@@ -1,121 +1,78 @@
-import Fastify, { FastifyRequest, FastifyReply } from "fastify";
-
-// import cors from "@fastify/cors";
-import fjwt from "@fastify/jwt";
-
-import { version } from "../package.json";
-import userRoutes from "./modules/user/user.route";
-import productRoutes from "./modules/product/product.route";
-import { userSchemas } from "./modules/user/user.schema";
-import { productSchemas } from "./modules/product/product.schema";
+import Fastify from "fastify";
+import {
+  serializerCompiler,
+  validatorCompiler,
+  ZodTypeProvider,
+} from "fastify-type-provider-zod";
+import cors from "@fastify/cors";
+import jwt from "@fastify/jwt";
 import swagger from "@fastify/swagger";
-import swaggerui from "@fastify/swagger-ui";
+import swaggerUi from "@fastify/swagger-ui";
+import { z } from "zod";
 
-export const server = Fastify({ logger: true });
+// 1. Our Zod schema remains the single source of truth
+const envSchema = z.object({
+  JWT_SECRET: z.string(),
+  DATABASE_URL: z.url(),
+  PORT: z.coerce.number().default(3000), // Coerce string to number
+});
 
-// CORS
-// server.register(cors, {
-// 	origin: ["localhost:9001"],
-// });
-
+// 2. Extend the Fastify types (remains identical)
 declare module "fastify" {
-  export interface FastifyInstance {
-    authenticate: any;
+  interface FastifyInstance {
+    config: z.infer<typeof envSchema>;
   }
 }
 
-declare module "@fastify/jwt" {
-  interface FastifyJwt {
-    user: {
-      id: number;
-      name: string;
-      email: string;
-    };
-  }
-}
+export async function buildServer() {
+  const server = Fastify({
+    logger: true,
+  }).withTypeProvider<ZodTypeProvider>();
 
-// JWT
-server.register(fjwt, {
-  secret: "supersecret",
-});
-server.decorate(
-  "authenticate",
-  async (request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      await request.jwtVerify();
-    } catch (error) {
-      return reply.send(error);
-    }
-  }
-);
+  server.setValidatorCompiler(validatorCompiler);
+  server.setSerializerCompiler(serializerCompiler);
 
-// healthcheck
-server.get("/healthcheck", async () => {
-  return { status: "OK" };
-});
+  // --- PLUGIN REGISTRATION ---
 
-async function main() {
-  // schemas
-  for (const schema of [...userSchemas, ...productSchemas]) {
-    server.addSchema(schema);
+  // 3. Validate and decorate manually (ONCE)
+  try {
+    const validatedConfig = envSchema.parse(process.env);
+    server.decorate("config", validatedConfig);
+  } catch (err) {
+    server.log.error("Invalid environment configuration:");
+    server.log.error(err);
+    process.exit(1); // Stop the server if config is invalid
   }
+
+  // 4. Now we can safely use server.config
+  await server.register(jwt, {
+    secret: server.config.JWT_SECRET,
+  });
+
+  await server.register(cors, {
+    origin: "*", // Set specific domains in production
+  });
 
   await server.register(swagger, {
     openapi: {
       info: {
-        title: "Fastify API",
-        description:
-          "PostgreSQL, Prisma, Fastify and Swagger REST API",
-        version: version,
+        title: "My API",
+        description: "API documentation",
+        version: "1.0.0",
       },
-      externalDocs: {
-        url: "https://swagger.io",
-        description: "Find more info here",
-      },
-      servers: [{ url: "http://localhost:3001" }],
-      components: {
-        securitySchemes: {
-          apiKey: {
-            type: "apiKey",
-            name: "apiKey",
-            in: "header",
-          },
-        },
-      },
-      security: [{ apiKey: [] }],
+      servers: [],
     },
   });
 
-  await server.register(swaggerui, {
+  await server.register(swaggerUi, {
     routePrefix: "/docs",
-    initOAuth: {},
-    uiConfig: {
-      docExpansion: "full",
-      deepLinking: false,
-    },
-    uiHooks: {
-      onRequest: function (request, reply, next) {
-        next();
-      },
-      preHandler: function (request, reply, next) {
-        next();
-      },
-    },
-    staticCSP: true,
-    transformStaticCSP: (header) => header,
   });
 
-  // routes
-  server.register(userRoutes, { prefix: "api/users" });
-  server.register(productRoutes, { prefix: "api/products" });
+  // --- ROUTE REGISTRATION ---
 
-  try {
-    await server.listen({ port: 3001, host: "0.0.0.0" });
-    console.log(`✅ Server running`);
-  } catch (error) {
-    console.error(`❌ Server stopped,`, error);
-    process.exit(1);
-  }
+  server.get("/", async () => {
+    return { status: "ok" };
+  });
+
+  return server;
 }
-
-main();
