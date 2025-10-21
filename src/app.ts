@@ -1,7 +1,7 @@
 /**
- * @file This file is responsible for building and configuring the main Fastify application.
- * It brings together all the pieces: server instance, plugins, decorators,
- * error handling, and route modules.
+ * @file This file is the core of the application server.
+ * It builds the Fastify instance, registers plugins, decorators,
+ * an error handler, and the main routes aggregator.
  */
 
 import { build } from "./server";
@@ -13,12 +13,11 @@ import { z } from "zod";
 import prisma from "./utils/prisma";
 import { PrismaClient } from "@prisma/client";
 import { registerErrorHandler } from "./utils/error.handler";
-import userRoutes from "./modules/user/user.route";
-import productRoutes from "./modules/product/product.route";
+import routes from "./modules/routes";
 
 /**
- * Zod schema for validating environment variables.
- * This ensures that all required variables are present and correctly typed upon startup.
+ * Defines the schema for environment variables using Zod.
+ * This ensures that all required environment variables are present and correctly typed.
  */
 const envSchema = z.object({
   JWT_SECRET: z.string(),
@@ -40,8 +39,8 @@ declare module "fastify" {
 }
 
 /**
- * Extends the @fastify/jwt plugin's types.
- * This provides type safety for the JWT payload and the `request.user` object.
+ * Extends the @fastify/jwt types to provide a strongly-typed `request.user` object.
+ * This ensures that the JWT payload is correctly typed throughout the application.
  */
 declare module "@fastify/jwt" {
   interface FastifyJWT {
@@ -61,9 +60,9 @@ declare module "@fastify/jwt" {
 }
 
 /**
- * Builds the complete Fastify server by assembling all plugins, decorators,
- * and routes.
- * @returns A promise that resolves to the fully configured Fastify server instance.
+ * Builds and configures the Fastify server instance.
+ * This function orchestrates the entire application setup.
+ * @returns A fully configured Fastify server instance.
  */
 export async function buildServer() {
   const server = build();
@@ -97,13 +96,16 @@ export async function buildServer() {
   });
   await server.register(swaggerUi, { routePrefix: "/docs" });
 
-  // --- REGISTER ERROR HANDLER ---
+  // --- REGISTER GLOBAL ERROR HANDLER ---
   registerErrorHandler(server);
 
   // --- ROUTE REGISTRATION ---
-  server.get("/", async () => ({ status: "ok" }));
-  server.register(userRoutes, { prefix: "/user" });
-  server.register(productRoutes, { prefix: "/product" });
+
+  // Register a simple health-check route
+  server.get("/", async () => ({ status: "✅ ok" }));
+
+  // Register the main routes plugin, which handles all application modules
+  server.register(routes);
 
   return server;
 }
