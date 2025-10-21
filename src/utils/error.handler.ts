@@ -1,39 +1,36 @@
 /**
- * @file Contains the centralized error handler for the Fastify application.
+ * @file This file contains the central error handling logic for the application.
+ * It catches all runtime errors and formats them into a consistent JSON response.
+ * NOTE: Validation errors are formatted in `app.ts` and then caught here.
  */
 
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import { ZodError } from "zod";
 import { Prisma } from "@prisma/client";
 
 /**
- * Registers a global error handler for the Fastify server.
- * This function intercepts all errors thrown within routes and formats them
- * into a consistent, user-friendly JSON response.
- *
- * @param server The Fastify server instance to attach the error handler to.
+ * Registers a global error handler for the Fastify instance.
+ * @param server The Fastify server instance.
  */
 export function registerErrorHandler(server: FastifyInstance) {
   server.setErrorHandler(
-    (error: Error, request: FastifyRequest, reply: FastifyReply) => {
-      // Log the full error for debugging purposes
-      server.log.error(error);
+    (
+      error: Error & { issues?: any[] },
+      request: FastifyRequest,
+      reply: FastifyReply
+    ) => {
+      server.log.error(error, "Error caught by global handler");
 
-      // --- Handle Zod Validation Errors (400 Bad Request) ---
-      if (error instanceof ZodError) {
+      // --- Handle Custom Validation Errors (400) ---
+      // This checks for the custom error we created in `setSchemaErrorFormatter` in app.ts
+      if (error.message === "Validation Failed" && error.issues) {
         return reply.status(400).send({
           statusCode: 400,
           error: "Bad Request",
-          // Map Zod issues to a clean, frontend-friendly array
-          issues: error.issues.map((issue) => ({
-            // e.g., 'body.name' becomes 'name'
-            field: issue.path.join("."),
-            message: issue.message,
-          })),
+          issues: error.issues,
         });
       }
 
-      // --- Handle Prisma "Record Not Found" Errors (404 Not Found) ---
+      // --- Handle Prisma "Not Found" Errors (404) ---
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === "P2025"
@@ -45,7 +42,7 @@ export function registerErrorHandler(server: FastifyInstance) {
         });
       }
 
-      // --- Handle Prisma "Unique Constraint Violation" Errors (409 Conflict) ---
+      // --- Handle Prisma "Unique Constraint" Errors (409) ---
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === "P2002"
@@ -53,11 +50,13 @@ export function registerErrorHandler(server: FastifyInstance) {
         return reply.status(409).send({
           statusCode: 409,
           error: "Conflict",
-          message: `Unique constraint violation on field: ${error.meta?.target}`,
+          message: `Unique constraint violation on field: ${
+            (error.meta?.target as string[])?.join(", ") || "unknown"
+          }`,
         });
       }
 
-      // --- Default to 500 Internal Server Error for all other errors ---
+      // --- Default to 500 Internal Server Error ---
       return reply.status(500).send({
         statusCode: 500,
         error: "Internal Server Error",
