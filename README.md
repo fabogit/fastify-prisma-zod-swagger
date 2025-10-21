@@ -1,31 +1,31 @@
 # fastify-prisma-zod-swagger
 
-if there is no `package.json` file:
+Refactored to use the updated packages
 
-- `npm init -y`
+Install packages
 
-- `npm i typescript`
+`npm i`
 
-- `npx tsc --init `
+Start the db using docker
 
-- `npm i prisma @prisma/client fastify fastify-zod zod zod-to-json-schema fastify-jwt fastify-swagger `
+`docker-compose up`
 
-- `npm i -D ts-node-dev typescript @types/node`
+Start dev server
 
-- `npm run dev`
+`npm run dev`
 
-###  Initialise prisma
+## Initialise prisma
 
 `npx prisma init --datasource-provider postgresql`
 
-### Turn your database schema into a Prisma schema
+## Turn your database schema into a Prisma schema
 
 `npx prisma db pull`
 
-### Generate prisma client
+## Generate prisma client
 
 `npx prisma generate`
 
-### Migrate the schema
+## Migrate the schema
 
-`npx prisma migrate dev --name init`
+`npx prisma migrate dev --name MIGRATION_NAME`
