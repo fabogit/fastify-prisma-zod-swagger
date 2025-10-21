@@ -1,78 +1,109 @@
-import Fastify from "fastify";
-import {
-  serializerCompiler,
-  validatorCompiler,
-  ZodTypeProvider,
-} from "fastify-type-provider-zod";
+/**
+ * @file This file is responsible for building and configuring the main Fastify application.
+ * It brings together all the pieces: server instance, plugins, decorators,
+ * error handling, and route modules.
+ */
+
+import { build } from "./server";
 import cors from "@fastify/cors";
 import jwt from "@fastify/jwt";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
 import { z } from "zod";
+import prisma from "./utils/prisma";
+import { PrismaClient } from "@prisma/client";
+import { registerErrorHandler } from "./utils/error.handler";
+import userRoutes from "./modules/user/user.route";
+import productRoutes from "./modules/product/product.route";
 
-// 1. Our Zod schema remains the single source of truth
+/**
+ * Zod schema for validating environment variables.
+ * This ensures that all required variables are present and correctly typed upon startup.
+ */
 const envSchema = z.object({
   JWT_SECRET: z.string(),
   DATABASE_URL: z.url(),
-  PORT: z.coerce.number().default(3000), // Coerce string to number
+  PORT: z.coerce.number().default(3000),
 });
 
-// 2. Extend the Fastify types (remains identical)
+// --- TYPE EXTENSIONS ---
+
+/**
+ * Extends the FastifyInstance interface to include custom decorators.
+ * This provides type safety and autocompletion for `server.config` and `server.prisma`.
+ */
 declare module "fastify" {
   interface FastifyInstance {
     config: z.infer<typeof envSchema>;
+    prisma: PrismaClient;
   }
 }
 
+/**
+ * Extends the @fastify/jwt plugin's types.
+ * This provides type safety for the JWT payload and the `request.user` object.
+ */
+declare module "@fastify/jwt" {
+  interface FastifyJWT {
+    // Type of the object we pass to `jwt.sign`
+    payload: {
+      id: number;
+      email: string;
+      name: string | null;
+    };
+    // Type of `request.user` after a successful `jwtVerify`
+    user: {
+      id: number;
+      email: string;
+      name: string | null;
+    };
+  }
+}
+
+/**
+ * Builds the complete Fastify server by assembling all plugins, decorators,
+ * and routes.
+ * @returns A promise that resolves to the fully configured Fastify server instance.
+ */
 export async function buildServer() {
-  const server = Fastify({
-    logger: true,
-  }).withTypeProvider<ZodTypeProvider>();
+  const server = build();
 
-  server.setValidatorCompiler(validatorCompiler);
-  server.setSerializerCompiler(serializerCompiler);
+  // --- PLUGIN & DECORATOR REGISTRATION ---
 
-  // --- PLUGIN REGISTRATION ---
-
-  // 3. Validate and decorate manually (ONCE)
+  // Validate environment variables and decorate server with `config`
   try {
     const validatedConfig = envSchema.parse(process.env);
     server.decorate("config", validatedConfig);
   } catch (err) {
-    server.log.error("Invalid environment configuration:");
-    server.log.error(err);
-    process.exit(1); // Stop the server if config is invalid
+    server.log.error(err, "Invalid environment configuration");
+    process.exit(1);
   }
 
-  // 4. Now we can safely use server.config
-  await server.register(jwt, {
-    secret: server.config.JWT_SECRET,
-  });
+  // Decorate server with Prisma client
+  server.decorate("prisma", prisma);
 
-  await server.register(cors, {
-    origin: "*", // Set specific domains in production
-  });
-
+  // Register core plugins
+  await server.register(jwt, { secret: server.config.JWT_SECRET });
+  await server.register(cors, { origin: "*" });
   await server.register(swagger, {
     openapi: {
       info: {
         title: "My API",
         description: "API documentation",
-        version: "1.0.0",
+        version: "2.0.0",
       },
       servers: [],
     },
   });
+  await server.register(swaggerUi, { routePrefix: "/docs" });
 
-  await server.register(swaggerUi, {
-    routePrefix: "/docs",
-  });
+  // --- REGISTER ERROR HANDLER ---
+  registerErrorHandler(server);
 
   // --- ROUTE REGISTRATION ---
-
-  server.get("/", async () => {
-    return { status: "ok" };
-  });
+  server.get("/", async () => ({ status: "ok" }));
+  server.register(userRoutes, { prefix: "/user" });
+  server.register(productRoutes, { prefix: "/product" });
 
   return server;
 }
