@@ -25,3 +25,5 @@ Refactored to use the updated packages
 ## Migrate the schema
 
 `npx prisma migrate dev --name MIGRATION_NAME`
+
+Postman collection and env files in `/postman` folder.
