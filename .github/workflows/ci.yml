@@ -1,0 +1,63 @@
+# Name of the workflow
+name: CI - Build and Test
+
+# Controls when the workflow will run
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: changeme
+          POSTGRES_DB: test-database
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.x"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      # Apply database migrations
+      # This command syncs the test database schema with `prisma/schema.prisma`.
+      # It's non-interactive and perfect for CI environments.
+      - name: Apply database migrations
+        run: npx prisma db push
+        env:
+          DATABASE_URL: "postgresql://postgres:changeme@localhost:5432/test-database?schema=public"
+
+      - name: Run build check
+        run: npm run build
+
+      - name: Run tests
+        run: npm test
+        # @fix: Provide ALL required environment variables to the test command
+        env:
+          DATABASE_URL: "postgresql://postgres:changeme@localhost:5432/test-database?schema=public"
+          JWT_SECRET: "test-secret-for-ci"
+          PORT: "3000"

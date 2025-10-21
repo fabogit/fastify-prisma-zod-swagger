@@ -96,6 +96,6 @@
         "types": ["vitest/globals"]                          /* This line tells TypeScript to include Vitest's global types (vi, describe, test, etc.) */
     },
     // Include source and Vitest config
-    "include": ["src/**/*", "vitest.config.ts"],
+    "include": ["src/**/*"],
     "exclude": ["node_modules"]
 }
