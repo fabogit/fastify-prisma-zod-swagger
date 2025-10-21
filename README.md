@@ -2,29 +2,25 @@
 
 Refactored to use the updated packages
 
-Install packages
+## Install packages
 
 `npm i`
 
-Start the db using docker
+## Start the db using docker
 
 `docker-compose up`
 
-Start dev server
+## If the db if new and has no schema generate it
+
+`npx prisma generate`
+
+## Start dev server
 
 `npm run dev`
-
-## Initialise prisma
-
-`npx prisma init --datasource-provider postgresql`
 
 ## Turn your database schema into a Prisma schema
 
 `npx prisma db pull`
-
-## Generate prisma client
-
-`npx prisma generate`
 
 ## Migrate the schema
 
