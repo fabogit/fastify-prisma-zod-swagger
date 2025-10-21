@@ -38,7 +38,7 @@
     "url": "git+https://github.com/fabogit/fastify-prisma-zod-swagger.git"
   },
   "scripts": {
-    "build": "prisma generate && tsc",
+    "build": "npx tsc --noEmit",
     "dev": "tsx watch --env-file=.env ./src/index.ts",
     "postinstall": "prisma generate",
     "start": "node dist/server.js",

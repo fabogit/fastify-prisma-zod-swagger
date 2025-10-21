@@ -51,11 +51,16 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      # Step 4: Run the TypeScript build check
+      # Step 4: Generate Prisma Client
+      # Ensures the client is up-to-date with the schema before any checks.
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      # Step 5: Run the TypeScript build check
       - name: Run build check
         run: npm run build
 
-      # Step 5: Run the tests
+      # Step 6: Run the tests
       - name: Run tests
         run: npm test
         # Provide the DATABASE_URL environment variable to the test command
