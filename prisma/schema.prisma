@@ -23,7 +23,7 @@ model Product {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  title     String   @db.VarChar(128)
+  name      String   @db.VarChar(128)
   content   String?
   price     Float
   owner     User     @relation(fields: [ownerId], references: [id])

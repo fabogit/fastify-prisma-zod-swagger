@@ -1,45 +1,43 @@
-import { FastifyInstance } from "fastify";
-import {
-  registerUserHandler,
-  loginHandler,
-  getUsersHandler,
-} from "./user.controller";
-import { $ref } from "./user.schema";
+/**
+ * @file This file defines the HTTP routes for the User module.
+ * It maps endpoints to their corresponding controller handlers.
+ */
 
-async function userRoutes(server: FastifyInstance) {
-  server.get(
-    "/",
-    {
-      preHandler: [server.authenticate],
-    },
-    getUsersHandler
-  );
+import { AppServer } from "../../server";
+import { createUserSchema, loginSchema } from "./user.schema";
+import { registerUserHandler, loginHandler } from "./user.controller";
 
+/**
+ * A Fastify plugin that encapsulates all user-related routes.
+ * It registers the schemas and handlers for user registration and login.
+ * @param server The Fastify server instance.
+ */
+const userRoutes = async (server: AppServer) => {
+  /**
+   * Defines the `POST /` route for user registration.
+   * - `schema`: Attaches the validation and response schemas.
+   * - `handler`: Delegates all logic to the `registerUserHandler`.
+   */
   server.post(
     "/",
     {
-      schema: {
-        body: $ref("createUserSchema"),
-        response: {
-          201: $ref("createUserReplySchema"),
-        },
-      },
+      schema: createUserSchema,
     },
     registerUserHandler
   );
 
+  /**
+   * Defines the `POST /login` route for user authentication.
+   * - `schema`: Attaches the validation and response schemas.
+   * - `handler`: Delegates all logic to the `loginHandler`.
+   */
   server.post(
     "/login",
     {
-      schema: {
-        body: $ref("loginSchema"),
-        response: {
-          200: $ref("loginReplySchema"),
-        },
-      },
+      schema: loginSchema,
     },
     loginHandler
   );
-}
+};
 
 export default userRoutes;
