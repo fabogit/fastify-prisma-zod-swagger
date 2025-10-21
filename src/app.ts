@@ -9,7 +9,7 @@ import cors from "@fastify/cors";
 import jwt from "@fastify/jwt";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
-import { z } from "zod";
+import { z, ZodError } from "zod";
 import prisma from "./utils/prisma";
 import { PrismaClient } from "@prisma/client";
 import { registerErrorHandler } from "./utils/error.handler";
@@ -96,7 +96,21 @@ export async function buildServer() {
   });
   await server.register(swaggerUi, { routePrefix: "/docs" });
 
-  // --- REGISTER GLOBAL ERROR HANDLER ---
+  // --- ERROR HANDLER REGISTRATION ---
+
+  // This formatter intercepts validation errors from Zod and creates a custom error object.
+  server.setSchemaErrorFormatter((errors, errorType) => {
+    // Create a new error with a specific message
+    const error = new Error("Validation Failed");
+    // Attach the structured validation issues to the error object
+    (error as any).issues = errors.map((e) => ({
+      field: e.instancePath.substring(1), // Remove leading '/'
+      message: e.message,
+    }));
+    return error;
+  });
+
+  // Register the generic error handler. It will now receive our custom validation error.
   registerErrorHandler(server);
 
   // --- ROUTE REGISTRATION ---

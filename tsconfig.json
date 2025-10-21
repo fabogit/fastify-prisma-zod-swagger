@@ -90,12 +90,12 @@
         // "allowUnreachableCode": true,                     /* Disable error reporting for unreachable code. */
         /* Completeness */
         // "skipDefaultLibCheck": true,                      /* Skip type checking .d.ts files that are included with TypeScript. */
-        "skipLibCheck": true                                 /* Skip type checking all .d.ts files. */
+        "skipLibCheck": true,                                /* Skip type checking all .d.ts files. */
+        // --- Type Definitions for Test Runner ---
+
+        "types": ["vitest/globals"]                          /* This line tells TypeScript to include Vitest's global types (vi, describe, test, etc.) */
     },
-    "include": [
-        "src/**/*"
-    ],
-    "exclude": [
-        "node_modules"
-    ]
+    // Include source and Vitest config
+    "include": ["src/**/*", "vitest.config.ts"],
+    "exclude": ["node_modules"]
 }

@@ -27,6 +27,7 @@ export const createProductSchema = {
       content: z.string().nullable(),
       createdAt: z.date(),
       updatedAt: z.date(),
+      ownerId: z.number(),
     }),
     // We must define the 401 response because the route is protected
     // and the onRequest hook sends this response manually.
@@ -48,6 +49,7 @@ export const getProductsSchema = {
         content: z.string().nullable(),
         createdAt: z.date(),
         updatedAt: z.date(),
+        ownerId: z.number(),
       })
     ),
   },
