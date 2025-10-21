@@ -35,7 +35,7 @@ describe("Product Service", () => {
     };
 
     // Configure the mock to return our expected product when `create` is called
-    (prisma.product.create as vi.Mock).mockResolvedValue(expectedProduct);
+    vi.mocked(prisma.product.create).mockResolvedValue(expectedProduct);
 
     // 2. ACT
     const result = await createProduct(input, ownerId);
@@ -55,21 +55,17 @@ describe("Product Service", () => {
   });
 
   /**
-   * @new Test case for database failures during product creation
-   * This test ensures that if Prisma throws an unexpected error,
-   * the service correctly propagates that error.
+   * Test case for database failures during product creation.
+   * This ensures that if Prisma throws an error, the service propagates it.
    */
-  test("createProduct should throw an error if the database operation fails", async () => {
-    // 1. ARRANGE
+  test("createProduct should throw if Prisma create fails", async () => {
+    // ARRANGE
     const input = { name: "Test Product", price: 99.99 };
     const ownerId = 1;
-    const dbError = new Error("Database connection failed");
+    const dbError = new Error("Database Error");
+    vi.mocked(prisma.product.create).mockRejectedValue(dbError);
 
-    // Configure the mock to reject the promise
-    (prisma.product.create as vi.Mock).mockRejectedValue(dbError);
-
-    // 2. ACT & 3. ASSERT
-    // We expect the createProduct function to reject with the same error
+    // ACT & ASSERT
     await expect(createProduct(input, ownerId)).rejects.toThrow(dbError);
   });
 
@@ -98,7 +94,7 @@ describe("Product Service", () => {
     ];
 
     // Configure the mock to return our array when `findMany` is called
-    (prisma.product.findMany as vi.Mock).mockResolvedValue(mockProducts);
+    vi.mocked(prisma.product.findMany).mockResolvedValue(mockProducts);
 
     // 2. ACT
     const result = await getProducts();
@@ -111,18 +107,15 @@ describe("Product Service", () => {
   });
 
   /**
-   * @new Test case for database failures during product retrieval
-   * This test ensures that if Prisma throws an unexpected error,
-   * the service correctly propagates that error.
+   * Test case for database failures during product retrieval.
+   * This ensures that if Prisma throws an error, the service propagates it.
    */
-  test("getProducts should throw an error if the database operation fails", async () => {
-    // 1. ARRANGE
-    const dbError = new Error("Database lookup failed");
-    // Configure the mock to reject the promise
-    (prisma.product.findMany as vi.Mock).mockRejectedValue(dbError);
+  test("getProducts should throw if Prisma findMany fails", async () => {
+    // ARRANGE
+    const dbError = new Error("Database Error");
+    vi.mocked(prisma.product.findMany).mockRejectedValue(dbError);
 
-    // 2. ACT & 3. ASSERT
-    // We expect the getProducts function to reject with the same error
+    // ACT & ASSERT
     await expect(getProducts()).rejects.toThrow(dbError);
   });
 });
