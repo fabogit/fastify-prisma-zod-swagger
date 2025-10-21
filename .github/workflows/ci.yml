@@ -1,0 +1,64 @@
+# Name of the workflow, which will be displayed on the "Actions" tab in GitHub
+name: CI - Build and Test
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push events but only for the "main" branch
+  push:
+    branches: ["main"]
+  # Triggers the workflow on pull request events targeting the "main" branch
+  pull_request:
+    branches: ["main"]
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This job is named "build-and-test"
+  build-and-test:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Services to host a PostgreSQL database container
+    services:
+      postgres:
+        image: postgres:15
+        # Set health checks to wait until postgres is ready
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: changeme
+          POSTGRES_DB: test-database
+
+    steps:
+      # Step 1: Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Sets up Node.js environment
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.x"
+          # Use npm caching to speed up dependency installation
+          cache: "npm"
+
+      # Step 3: Install project dependencies
+      - name: Install dependencies
+        run: npm install
+
+      # Step 4: Run the TypeScript build check
+      - name: Run build check
+        run: npm run build
+
+      # Step 5: Run the tests
+      - name: Run tests
+        run: npm test
+        # Provide the DATABASE_URL environment variable to the test command
+        # This URL points to the PostgreSQL service container we defined above
+        env:
+          DATABASE_URL: "postgresql://postgres:changeme@localhost:5432/test-database?schema=public"
