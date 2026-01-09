@@ -23,6 +23,7 @@ const envSchema = z.object({
   JWT_SECRET: z.string(),
   DATABASE_URL: z.url(),
   PORT: z.coerce.number().default(3000),
+  CORS_ORIGIN: z.string().default("*"),
 });
 
 // --- TYPE EXTENSIONS ---
@@ -83,7 +84,12 @@ export async function buildServer() {
 
   // Register core plugins
   await server.register(jwt, { secret: server.config.JWT_SECRET });
-  await server.register(cors, { origin: "*" });
+  await server.register(cors, {
+    origin:
+      server.config.CORS_ORIGIN === "*"
+        ? "*"
+        : server.config.CORS_ORIGIN.split(",").map((origin) => origin.trim()),
+  });
   await server.register(swagger, {
     openapi: {
       info: {
