@@ -106,6 +106,7 @@ describe("Server Lifecycle & Health", () => {
     });
 
     // ASSERT
-    expect(response.headers["access-control-allow-origin"]).toBe("*");
+    // The default value in app.ts is "http://localhost:3000", which matches the test environment default
+    expect(response.headers["access-control-allow-origin"]).toBe("http://localhost:3000");
   });
 });
