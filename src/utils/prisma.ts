@@ -13,7 +13,8 @@ import { PrismaClient } from "@prisma/client";
  * detailed database interaction feedback during development.
  */
 const prisma = new PrismaClient({
-  log: ["query", "info", "warn", "error"],
+  // Only log queries in development to reduce I/O overhead in production
+  log: process.env.NODE_ENV === "development" ? ["query", "info", "warn", "error"] : ["error"],
 });
 
 export default prisma;
