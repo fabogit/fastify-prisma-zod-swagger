@@ -28,4 +28,6 @@ model Product {
   price     Float
   owner     User     @relation(fields: [ownerId], references: [id])
   ownerId   Int
+
+  @@index([ownerId])
 }
