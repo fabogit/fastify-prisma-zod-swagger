@@ -12,6 +12,11 @@ import { z } from "zod";
 type CreateUserInput = z.infer<typeof createUserSchema.body>;
 type LoginInput = z.infer<typeof loginSchema.body>;
 
+// Predefined dummy salt for simulating password hashing when a user is not found.
+// This helps prevent timing attacks (User Enumeration).
+// The format corresponds to a valid bcrypt salt.
+const DUMMY_SALT = "$2b$10$abcdefghijklmnopqrstuv";
+
 /**
  * Creates a new user in the database after hashing their password.
  * @param input - The user's registration data (email, name, password).
@@ -52,8 +57,10 @@ async function findUserByEmailAndPassword(input: LoginInput) {
     where: { email: input.email },
   });
 
-  // If user is not found, authentication fails
+  // If user is not found, we still perform a hash operation to simulate the delay.
+  // This prevents attackers from determining if an email exists based on response time.
   if (!user) {
+    await bcrypt.hash(input.password, DUMMY_SALT);
     return null;
   }
 
