@@ -54,6 +54,10 @@ async function findUserByEmailAndPassword(input: LoginInput) {
 
   // If user is not found, authentication fails
   if (!user) {
+    // Prevent timing attack: perform a hash operation similar to the one in the success path
+    // using a dummy salt with the same cost factor (10 rounds).
+    // Dummy salt: $2b$10$aEw72FWC7Y8VMhsOqYJmjO
+    await bcrypt.hash(input.password, "$2b$10$aEw72FWC7Y8VMhsOqYJmjO");
     return null;
   }
 

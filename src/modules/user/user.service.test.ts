@@ -132,6 +132,11 @@ describe("User Service", () => {
 
       // 3. ASSERT
       expect(result).toBeNull();
+      // Ensure we perform a hash operation to mitigate timing attacks
+      expect(bcrypt.hash).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.stringContaining("$2b$10$")
+      );
     });
 
     test("should return null if the password does not match", async () => {
