@@ -8,6 +8,8 @@ import prisma from "../../utils/prisma";
 import { createUserSchema, loginSchema } from "./user.schema";
 import { z } from "zod";
 
+const DUMMY_SALT = "$2b$10$oFUWFCdN7F9EmDq.G7jEne";
+
 // Infer types from Zod schemas to avoid duplication
 type CreateUserInput = z.infer<typeof createUserSchema.body>;
 type LoginInput = z.infer<typeof loginSchema.body>;
@@ -54,6 +56,8 @@ async function findUserByEmailAndPassword(input: LoginInput) {
 
   // If user is not found, authentication fails
   if (!user) {
+    // Perform a dummy hash to mitigate timing attacks
+    await bcrypt.hash(input.password, DUMMY_SALT);
     return null;
   }
 
