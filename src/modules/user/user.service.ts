@@ -54,6 +54,22 @@ async function findUserByEmailAndPassword(input: LoginInput) {
 
   // If user is not found, authentication fails
   if (!user) {
+    // SECURITY: Perform a dummy hash to mitigate timing attacks (User Enumeration).
+    // This ensures the response time is similar whether the user exists or not.
+    // We use a fixed dummy salt that matches the format of the real salts.
+    // "$2b$10$abcdefghijklmnopqrstuv" is a placeholder 22-char salt (invalid but sufficient for timing).
+    // Better: Generate a valid one once or use a constant valid one.
+    // We will use a dynamically generated salt for the first time, then cache it, or just generate one.
+    // However, generating a salt takes time too.
+    // To match the exact path of "user found":
+    // 1. bcrypt.hash(input.password, user.salt)
+    // user.salt is just a string.
+    // So we just need to do bcrypt.hash(input.password, someString).
+
+    // Let's use a hardcoded valid-looking salt string to avoid overhead of genSalt here.
+    const dummySalt = "$2b$10$abcdefghijklmnopqrstuv";
+    await bcrypt.hash(input.password, dummySalt);
+
     return null;
   }
 
