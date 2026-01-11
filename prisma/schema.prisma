@@ -28,4 +28,7 @@ model Product {
   price     Float
   owner     User     @relation(fields: [ownerId], references: [id])
   ownerId   Int
+
+  // Index for performance: speeds up queries by ownerId and referential integrity checks on User delete
+  @@index([ownerId])
 }
