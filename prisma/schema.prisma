@@ -28,4 +28,7 @@ model Product {
   price     Float
   owner     User     @relation(fields: [ownerId], references: [id])
   ownerId   Int
+
+  // Index for faster lookups by owner (e.g., "My Products") and referential integrity checks
+  @@index([ownerId])
 }
