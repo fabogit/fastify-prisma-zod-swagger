@@ -12,6 +12,10 @@ import { z } from "zod";
 type CreateUserInput = z.infer<typeof createUserSchema.body>;
 type LoginInput = z.infer<typeof loginSchema.body>;
 
+// Dummy salt used to mitigate timing attacks during login
+// This ensures that we always perform a hashing operation even if the user is not found.
+const DUMMY_SALT = "$2b$10$Bce0NnIJ8LcQVt7DKeFaFu";
+
 /**
  * Creates a new user in the database after hashing their password.
  * @param input - The user's registration data (email, name, password).
@@ -52,13 +56,20 @@ async function findUserByEmailAndPassword(input: LoginInput) {
     where: { email: input.email },
   });
 
-  // If user is not found, authentication fails
+  // Determine which salt to use. If the user is found, use their stored salt.
+  // If not, use a dummy salt so that the hashing operation still takes place.
+  const salt = user ? user.salt : DUMMY_SALT;
+
+  // Re-hash the incoming password (with the user's salt or the dummy salt).
+  // This operation is computationally expensive and takes a consistent amount of time.
+  const hashedPassword = await bcrypt.hash(input.password, salt);
+
+  // If user is not found, authentication fails.
+  // We return here after the expensive operation to prevent timing attacks.
   if (!user) {
     return null;
   }
 
-  // Re-hash the incoming password with the user's stored salt to compare
-  const hashedPassword = await bcrypt.hash(input.password, user.salt);
   const isMatch = hashedPassword === user.password;
 
   // If passwords do not match, authentication fails

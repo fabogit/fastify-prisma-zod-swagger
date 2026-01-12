@@ -121,17 +121,23 @@ describe("User Service", () => {
 
       // 3. ASSERT
       expect(result).toEqual(storedUser);
+      expect(bcrypt.hash).toHaveBeenCalledWith(userInput.password, storedUser.salt);
     });
 
-    test("should return null if the user is not found", async () => {
+    test("should return null if the user is not found, but still execute hash", async () => {
       // 1. ARRANGE
       vi.mocked(prisma.user.findUnique).mockResolvedValue(null);
+      vi.mocked(bcrypt.hash).mockImplementation(() =>
+        Promise.resolve("hashedDefault")
+      );
 
       // 2. ACT
       const result = await findUserByEmailAndPassword(userInput);
 
       // 3. ASSERT
       expect(result).toBeNull();
+      // Verify that bcrypt.hash was called even though user was null
+      expect(bcrypt.hash).toHaveBeenCalled();
     });
 
     test("should return null if the password does not match", async () => {
