@@ -11,6 +11,8 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: "postgresql://postgres:changeme@localhost:5432/test-database?schema=public"
 
     services:
       postgres:
@@ -42,14 +44,8 @@ jobs:
 
         run: pnpm install --frozen-lockfile
 
-      - name: Generate Prisma Client
-        run: pnpm prisma generate
-
       - name: Apply database migrations
         run: pnpm prisma db push
-        env:
-          DATABASE_URL: "postgresql://postgres:changeme@localhost:5432/test-database?sche\
-            ma=public"
 
       - name: Run build check
         run: pnpm run build
@@ -57,7 +53,5 @@ jobs:
       - name: Run tests
         run: pnpm test
         env:
-          DATABASE_URL: "postgresql://postgres:changeme@localhost:5432/test-database?sche\
-            ma=public"
           JWT_SECRET: "test-secret-for-ci"
           PORT: "3000"
