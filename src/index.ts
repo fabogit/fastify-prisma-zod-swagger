@@ -1,10 +1,5 @@
-/**
- * Main application entry point.
- * This file is responsible for building the Fastify server by calling `buildServer`
- * from `app.ts` and then starting it.
- */
-
-import { buildServer } from "./app";
+import { buildServer } from "./app.ts";
+import closeWithGrace from "close-with-grace";
 
 /**
  * Starts the application server.
@@ -15,7 +10,24 @@ import { buildServer } from "./app";
 async function start() {
   const server = await buildServer();
 
+  // Register graceful shutdown
+  closeWithGrace({ delay: 5000 }, async ({ signal, err }) => {
+    if (err) {
+      server.log.error(err, "Error during close-with-grace");
+    }
+    server.log.info({ signal }, "Graceful shutdown initiated");
+    
+    try {
+      server.log.info("Closing Fastify server...");
+      await server.close();
+      server.log.info("Fastify server closed successfully");
+    } catch (closeErr) {
+      server.log.error(closeErr, "Error while closing Fastify server");
+    }
+  });
+
   try {
+    await server.ready();
     await server.listen({
       port: server.config.PORT,
       host: "0.0.0.0",

@@ -4,9 +4,9 @@ name: CI - Build and Test
 # Controls when the workflow will run
 on:
   push:
-    branches: ["main"]
+    branches: [ "main" ]
   pull_request:
-    branches: ["main"]
+    branches: [ "main" ]
 
 jobs:
   build-and-test:
@@ -14,11 +14,9 @@ jobs:
 
     services:
       postgres:
-        image: postgres:15
+        image: postgres:17
         options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
+          --health-cmd pg_isready --health-interval 10s --health-timeout 5s
           --health-retries 5
         ports:
           - 5432:5432
@@ -29,35 +27,40 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10
+          run_install: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "22.x"
-          cache: "npm"
+          node-version: "24.x"
+          cache: "pnpm"
 
       - name: Install dependencies
-        run: npm install
+
+        run: pnpm install --frozen-lockfile
 
       - name: Generate Prisma Client
-        run: npx prisma generate
+        run: pnpm prisma generate
 
-      # Apply database migrations
-      # This command syncs the test database schema with `prisma/schema.prisma`.
-      # It's non-interactive and perfect for CI environments.
       - name: Apply database migrations
-        run: npx prisma db push
+        run: pnpm prisma db push
         env:
-          DATABASE_URL: "postgresql://postgres:changeme@localhost:5432/test-database?schema=public"
+          DATABASE_URL: "postgresql://postgres:changeme@localhost:5432/test-database?sche\
+            ma=public"
 
       - name: Run build check
-        run: npm run build
+        run: pnpm run build
 
       - name: Run tests
-        run: npm test
-        # @fix: Provide ALL required environment variables to the test command
+        run: pnpm test
         env:
-          DATABASE_URL: "postgresql://postgres:changeme@localhost:5432/test-database?schema=public"
+          DATABASE_URL: "postgresql://postgres:changeme@localhost:5432/test-database?sche\
+            ma=public"
           JWT_SECRET: "test-secret-for-ci"
           PORT: "3000"

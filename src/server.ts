@@ -3,7 +3,10 @@ import {
   ZodTypeProvider,
   serializerCompiler,
   validatorCompiler,
+  jsonSchemaTransform,
 } from "fastify-type-provider-zod";
+
+export { jsonSchemaTransform };
 
 /**
  * Builds and configures a Fastify `server` instance.
@@ -15,10 +18,8 @@ import {
 export const build = () => {
   const server = Fastify({
     logger: true,
-
-  })
-    // The type provider is set here
-    .withTypeProvider<ZodTypeProvider>();
+    forceCloseConnections: true,
+  }).withTypeProvider<ZodTypeProvider>();
 
   // Set the compilers here to keep app.ts cleaner
   server.setValidatorCompiler(validatorCompiler);

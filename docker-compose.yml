@@ -3,10 +3,11 @@ version: "3.8"
 services:
   postgres:
     container_name: pg-postgres_container
-    image: postgres
+    image: postgres:17
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      POSTGRES_DB: ${POSTGRES_DB:-test-database}
       PGDATA: /data/postgres
     volumes:
       - postgres:/data/postgres

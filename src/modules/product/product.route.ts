@@ -3,9 +3,9 @@
  * It maps endpoints, schemas, and authentication hooks to their corresponding controller handlers.
  */
 
-import { AppServer } from "../../server";
-import { createProductSchema, getProductsSchema } from "./product.schema";
-import { createProductHandler, getProductsHandler } from "./product.controller";
+import { AppServer } from "../../server.ts";
+import { createProductSchema, getProductsSchema } from "./product.schema.ts";
+import { createProductHandler, getProductsHandler } from "./product.controller.ts";
 
 /**
  * A Fastify plugin that encapsulates all product-related routes.
@@ -21,19 +21,7 @@ const productRoutes = async (server: AppServer) => {
   server.post(
     "/",
     {
-      onRequest: [
-        async (request, reply) => {
-          try {
-            await request.jwtVerify();
-          } catch (err) {
-            reply.status(401).send({
-              statusCode: 401,
-              error: "Unauthorized",
-              message: "Invalid or missing token",
-            });
-          }
-        },
-      ],
+      onRequest: [server.authenticate],
       schema: createProductSchema,
     },
     createProductHandler

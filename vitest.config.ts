@@ -28,5 +28,9 @@ export default defineConfig({
      * which is crucial for integration tests that need the DATABASE_URL.
      */
     setupFiles: ["dotenv/config"],
+    /**
+     * Include only tests inside the src/ directory.
+     */
+    include: ["src/**/*.spec.ts"],
   },
 });

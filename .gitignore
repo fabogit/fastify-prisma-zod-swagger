@@ -104,11 +104,12 @@ dist
 # TernJS port file
 .tern-port
 
-# Prisma generated files
-generated
+# Prisma generated client
+generated/
 
-# AI agent files
+# AI agent and skill files
 .agent*
+.agents/
 .claude*
 .cursor*
 .gemini*
