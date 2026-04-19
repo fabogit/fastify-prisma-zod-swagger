@@ -5,7 +5,8 @@
  */
 
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import { Prisma } from "@prisma/client";
+import { Prisma } from "../generated/client/client.js";
+import { ValidationIssue } from "./error.schema.ts";
 
 /**
  * Registers a global error handler for the Fastify instance.
@@ -14,7 +15,7 @@ import { Prisma } from "@prisma/client";
 export function registerErrorHandler(server: FastifyInstance) {
   server.setErrorHandler(
     (
-      error: Error & { issues?: any[] },
+      error: Error & { issues?: ValidationIssue[] },
       request: FastifyRequest,
       reply: FastifyReply
     ) => {

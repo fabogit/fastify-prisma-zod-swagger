@@ -5,8 +5,8 @@
 
 import { FastifyReply, FastifyRequest } from "fastify";
 import { z } from "zod";
-import { createProductSchema } from "./product.schema";
-import { createProduct, getProducts } from "./product.service";
+import { createProductSchema } from "./product.schema.ts";
+import { createProduct, getProducts } from "./product.service.ts";
 
 // Infer the input type from the Zod schema for type safety
 type CreateProductInput = z.infer<typeof createProductSchema.body>;
@@ -19,14 +19,17 @@ type CreateProductInput = z.infer<typeof createProductSchema.body>;
  * @param reply The Fastify reply object.
  */
 export async function createProductHandler(
-  request: FastifyRequest<{ Body: CreateProductInput }>,
+  request: FastifyRequest,
   reply: FastifyReply
 ) {
-  // Extract the user ID from the authenticated user's token
+  // We use explicit typing here since the handler is defined outside the route
+  const body = request.body as CreateProductInput;
   const ownerId = request.user.id;
-
-  // Call the service to perform the business logic
-  const product = await createProduct(request.body, ownerId);
+  const product = await createProduct(
+    request.server.prisma,
+    body,
+    ownerId
+  );
 
   // Send the newly created product with a 201 status code
   return reply.status(201).send(product);
@@ -43,7 +46,7 @@ export async function getProductsHandler(
   reply: FastifyReply
 ) {
   // Call the service to get all products
-  const products = await getProducts();
+  const products = await getProducts(request.server.prisma);
 
   // Send the list of products with a 200 status code
   return reply.status(200).send(products);

@@ -3,9 +3,9 @@
  * It maps endpoints to their corresponding controller handlers.
  */
 
-import { AppServer } from "../../server";
-import { createUserSchema, loginSchema } from "./user.schema";
-import { registerUserHandler, loginHandler } from "./user.controller";
+import { AppServer } from "../../server.ts";
+import { createUserSchema, loginSchema, getUserMeSchema } from "./user.schema.ts";
+import { registerUserHandler, loginHandler } from "./user.controller.ts";
 
 /**
  * A Fastify plugin that encapsulates all user-related routes.
@@ -13,6 +13,7 @@ import { registerUserHandler, loginHandler } from "./user.controller";
  * @param server The Fastify server instance.
  */
 const userRoutes = async (server: AppServer) => {
+  
   /**
    * Defines the `POST /` route for user registration.
    * - `schema`: Attaches the validation and response schemas.
@@ -37,6 +38,22 @@ const userRoutes = async (server: AppServer) => {
       schema: loginSchema,
     },
     loginHandler
+  );
+
+  /**
+   * Defines the `GET /me` route for getting current user profile.
+   * - `onRequest`: Uses the `server.authenticate` decorator.
+   * - `handler`: Returns the authenticated user from the request.
+   */
+  server.get(
+    "/me",
+    {
+      onRequest: [server.authenticate],
+      schema: getUserMeSchema,
+    },
+    async (request) => {
+      return { user: request.user };
+    }
   );
 };
 

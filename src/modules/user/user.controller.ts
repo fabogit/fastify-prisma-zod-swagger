@@ -5,8 +5,8 @@
 
 import { FastifyReply, FastifyRequest } from "fastify";
 import { z } from "zod";
-import { createUserSchema, loginSchema } from "./user.schema";
-import { createUser, findUserByEmailAndPassword } from "./user.service";
+import { createUserSchema, loginSchema } from "./user.schema.ts";
+import { createUser, findUserByEmailAndPassword } from "./user.service.ts";
 
 // Infer types from Zod schemas for request body validation
 type CreateUserInput = z.infer<typeof createUserSchema.body>;
@@ -23,7 +23,7 @@ export async function registerUserHandler(
   reply: FastifyReply
 ) {
   // The request body is already validated by the route's schema
-  const user = await createUser(request.body);
+  const user = await createUser(request.server.prisma, request.body);
 
   // Send the newly created user with a 201 status code
   return reply.status(201).send(user);
@@ -40,7 +40,10 @@ export async function loginHandler(
   request: FastifyRequest<{ Body: LoginInput }>,
   reply: FastifyReply
 ) {
-  const user = await findUserByEmailAndPassword(request.body);
+  const user = await findUserByEmailAndPassword(
+    request.server.prisma,
+    request.body
+  );
 
   // If the service returns null, authentication failed
   if (!user) {

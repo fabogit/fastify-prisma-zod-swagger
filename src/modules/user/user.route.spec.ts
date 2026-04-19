@@ -5,9 +5,9 @@
  */
 
 import { describe, test, expect, beforeAll, afterAll } from "vitest";
-import { buildServer } from "../../app";
-import { AppServer } from "../../server";
-import prisma from "../../utils/prisma";
+import { buildServer } from "../../app.ts";
+import { AppServer } from "../../server.ts";
+import { prisma } from "../../db.ts";
 
 describe("User Routes", () => {
   let server: AppServer;
@@ -17,13 +17,17 @@ describe("User Routes", () => {
     password: "Password123!",
   };
 
-  // Build the server before all tests
+  /**
+   * Build the server before all tests
+   */
   beforeAll(async () => {
     server = await buildServer();
     await server.ready();
   });
 
-  // Clean up the database and close the server after all tests
+  /**
+   * Clean up the database and close the server after all tests
+   */
   afterAll(async () => {
     await prisma.user.deleteMany();
     await server.close();

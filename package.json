@@ -4,48 +4,76 @@
     "url": "https://github.com/fabogit/fastify-prisma-zod-swagger/issues"
   },
   "dependencies": {
-    "@fastify/cors": "^11.1.0",
+    "@fastify/cors": "^11.2.0",
+    "@fastify/helmet": "^13.0.2",
     "@fastify/jwt": "^10.0.0",
-    "@fastify/swagger": "^9.5.2",
-    "@fastify/swagger-ui": "^5.2.3",
-    "@prisma/client": "^6.17.1",
+    "@fastify/rate-limit": "^10.3.0",
+    "@fastify/static": "^9.1.1",
+    "@fastify/swagger": "^9.7.0",
+    "@fastify/swagger-ui": "^5.2.5",
+    "@prisma/adapter-pg": "^7.7.0",
+    "@prisma/client": "^7.7.0",
     "bcrypt": "^6.0.0",
-    "fastify": "^5.6.1",
-    "fastify-type-provider-zod": "^6.0.0",
-    "zod": "^4.1.12"
+    "close-with-grace": "^2.5.0",
+    "dotenv": "^17.4.2",
+    "fastify": "^5.8.5",
+    "fastify-plugin": "^5.1.0",
+    "fastify-type-provider-zod": "^6.1.0",
+    "pg": "^8.20.0",
+    "swagger-ui-dist": "^5.32.4",
+    "zod": "^4.3.6",
+    "zod-to-json-schema": "^3.25.2"
   },
   "description": "A server boilerplate using Fastify, Prisma, Zod and Swagger",
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/bcrypt": "^6.0.0",
-    "@types/node": "^24.7.2",
-    "dotenv": "^17.2.3",
-    "prisma": "^6.17.1",
+    "@types/node": "^24.12.2",
+    "@types/pg": "8.20.0",
+    "eslint": "^10.2.0",
+    "globals": "^17.5.0",
+    "prisma": "^7.7.0",
     "tsc-alias": "^1.8.16",
-    "tsx": "^4.20.6",
+    "tsx": "^4.21.0",
     "typescript": "^5.9.3",
+    "typescript-eslint": "^8.58.2",
     "vitest": "^3.2.4"
   },
   "engines": {
-    "node": "^22",
-    "npm": "^10"
+    "node": "^24",
+    "pnpm": "^10"
   },
   "homepage": "https://github.com/fabogit/fastify-prisma-zod-swagger#readme",
   "keywords": [],
   "license": "ISC",
-  "main": "index.js",
+  "main": "dist/index.js",
   "name": "fastify-prisma-zod-swagger",
+  "packageManager": "pnpm@10.28.0",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@prisma/engines",
+      "@scarf/scarf",
+      "bcrypt",
+      "esbuild",
+      "prisma"
+    ]
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/fabogit/fastify-prisma-zod-swagger.git"
   },
   "scripts": {
-    "build": "npx tsc && tsc-alias",
+    "build": "rm -rf dist && tsc -p tsconfig.json",
     "dev": "tsx watch --env-file=.env ./src/index.ts",
+    "lint": "eslint . --ext .ts",
     "postinstall": "prisma generate",
-    "start": "node dist/index.js",
+    "start": "node --env-file=.env dist/index.js",
     "test": "vitest run",
     "test:watch": "vitest"
   },
   "type": "module",
-  "version": "2.0.0"
+  "version": "3.0.0"
 }

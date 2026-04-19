@@ -5,9 +5,9 @@
  */
 
 import { describe, test, expect, beforeAll, afterAll } from "vitest";
-import { buildServer } from "./app";
-import { AppServer } from "./server";
-import prisma from "./utils/prisma";
+import { buildServer } from "./app.ts";
+import { AppServer } from "./server.ts";
+import { prisma } from "./db.ts";
 
 describe("Server Lifecycle & Health", () => {
   let server: AppServer;
@@ -50,7 +50,7 @@ describe("Server Lifecycle & Health", () => {
 
     // ASSERT
     expect(response.statusCode).toBe(200);
-    expect(response.json()).toEqual({ status: "✅ ok" });
+    expect(response.json()).toEqual({ status: "✅ OK" });
   });
 
   /**
@@ -103,10 +103,13 @@ describe("Server Lifecycle & Health", () => {
     const response = await server.inject({
       method: "GET",
       url: "/",
+      headers: {
+        origin: server.config.CORS_ORIGIN,
+      },
     });
 
     // ASSERT
-    // The default value in app.ts is "http://localhost:3000", which matches the test environment default
-    expect(response.headers["access-control-allow-origin"]).toBe("http://localhost:3000");
+    expect(response.headers["access-control-allow-origin"]).toBe(server.config.CORS_ORIGIN);
+
   });
 });

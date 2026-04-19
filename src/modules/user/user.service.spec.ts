@@ -5,25 +5,32 @@
  */
 
 import { describe, test, expect, vi } from "vitest";
-import prisma from "../../utils/prisma";
 import bcrypt from "bcrypt";
-import { createUser, findUserByEmailAndPassword } from "./user.service";
+import { createUser, findUserByEmailAndPassword } from "./user.service.ts";
+import { PrismaClient } from "../../generated/client/client.js";
 
-// Mock the Prisma client module
-vi.mock("../../utils/prisma", () => ({
-  default: {
-    user: {
-      create: vi.fn(),
-      findUnique: vi.fn(),
-    },
+// Define a type-safe mock interface for Prisma to avoid 'any'
+interface MockPrisma {
+  user: {
+    create: ReturnType<typeof vi.fn>;
+    findUnique: ReturnType<typeof vi.fn>;
+  };
+}
+
+// Create a mock Prisma instance
+const mockPrisma = {
+  user: {
+    create: vi.fn(),
+    findUnique: vi.fn(),
   },
-}));
+} as unknown as MockPrisma & PrismaClient;
 
 // Mock the bcrypt library
 vi.mock("bcrypt", () => ({
   default: {
     genSalt: vi.fn(),
     hash: vi.fn(),
+    compare: vi.fn(),
   },
 }));
 
@@ -53,19 +60,15 @@ describe("User Service", () => {
         Promise.resolve(hashedPassword)
       );
 
-      // --- FIX: The mock should resolve with the value our service function is expected to return.
-      // We use `as any` to bypass a TypeScript type mismatch, acknowledging that `select`
-      // alters the return type at runtime, which is difficult to model in a simple mock.
-      vi.mocked(prisma.user.create).mockResolvedValue(
-        expectedSelectedUser as any
-      );
+      vi.mocked(mockPrisma.user.create).mockResolvedValue(expectedSelectedUser);
+
 
       // 2. ACT
-      const result = await createUser(userInput);
+      const result = await createUser(mockPrisma, userInput);
 
       // 3. ASSERT
       // Verify that prisma.user.create was called with the correct arguments, including `select`
-      expect(prisma.user.create).toHaveBeenCalledWith({
+      expect(mockPrisma.user.create).toHaveBeenCalledWith({
         data: {
           email: userInput.email,
           name: userInput.name,
@@ -80,7 +83,7 @@ describe("User Service", () => {
       });
 
       // Verify that the final result of our service function is the selected user object
-      expect(result).toEqual(expectedSelectedUser);
+      expect(result).toEqual({ id: expectedSelectedUser.id, email: expectedSelectedUser.email, name: expectedSelectedUser.name });
     });
 
     /**
@@ -93,10 +96,10 @@ describe("User Service", () => {
       vi.mocked(bcrypt.hash).mockImplementation(() =>
         Promise.resolve(hashedPassword)
       );
-      vi.mocked(prisma.user.create).mockRejectedValue(dbError);
+      vi.mocked(mockPrisma.user.create).mockRejectedValue(dbError);
 
       // 2. ACT & 3. ASSERT
-      await expect(createUser(userInput)).rejects.toThrow(dbError);
+      await expect(createUser(mockPrisma, userInput)).rejects.toThrow(dbError);
     });
   });
 
@@ -111,13 +114,11 @@ describe("User Service", () => {
         password: hashedPassword,
       };
 
-      vi.mocked(prisma.user.findUnique).mockResolvedValue(storedUser);
-      vi.mocked(bcrypt.hash).mockImplementation(() =>
-        Promise.resolve(hashedPassword)
-      );
+      vi.mocked(mockPrisma.user.findUnique).mockResolvedValue(storedUser);
+      vi.mocked(bcrypt.compare as (data: string | Buffer, encrypted: string) => Promise<boolean>).mockResolvedValue(true);
 
       // 2. ACT
-      const result = await findUserByEmailAndPassword(userInput);
+      const result = await findUserByEmailAndPassword(mockPrisma, userInput);
 
       // 3. ASSERT
       expect(result).toEqual(storedUser);
@@ -125,10 +126,10 @@ describe("User Service", () => {
 
     test("should return null if the user is not found", async () => {
       // 1. ARRANGE
-      vi.mocked(prisma.user.findUnique).mockResolvedValue(null);
+      vi.mocked(mockPrisma.user.findUnique).mockResolvedValue(null);
 
       // 2. ACT
-      const result = await findUserByEmailAndPassword(userInput);
+      const result = await findUserByEmailAndPassword(mockPrisma, userInput);
 
       // 3. ASSERT
       expect(result).toBeNull();
@@ -143,13 +144,11 @@ describe("User Service", () => {
         password: hashedPassword,
       };
 
-      vi.mocked(prisma.user.findUnique).mockResolvedValue(storedUser);
-      vi.mocked(bcrypt.hash).mockImplementation(() =>
-        Promise.resolve("wronghashedpassword")
-      );
+      vi.mocked(mockPrisma.user.findUnique).mockResolvedValue(storedUser);
+      vi.mocked(bcrypt.compare as (data: string | Buffer, encrypted: string) => Promise<boolean>).mockResolvedValue(false);
 
       // 2. ACT
-      const result = await findUserByEmailAndPassword(userInput);
+      const result = await findUserByEmailAndPassword(mockPrisma, userInput);
 
       // 3. ASSERT
       expect(result).toBeNull();
@@ -161,12 +160,12 @@ describe("User Service", () => {
     test("should throw an error if the database lookup fails", async () => {
       // 1. ARRANGE
       const dbError = new Error("Database lookup failed");
-      vi.mocked(prisma.user.findUnique).mockRejectedValue(dbError);
+      vi.mocked(mockPrisma.user.findUnique).mockRejectedValue(dbError);
 
       // 2. ACT & 3. ASSERT
-      await expect(findUserByEmailAndPassword(userInput)).rejects.toThrow(
-        dbError
-      );
+      await expect(
+        findUserByEmailAndPassword(mockPrisma, userInput)
+      ).rejects.toThrow(dbError);
     });
 
     /**
@@ -181,13 +180,13 @@ describe("User Service", () => {
         password: hashedPassword,
       };
       const hashError = new Error("bcrypt failed");
-      vi.mocked(prisma.user.findUnique).mockResolvedValue(storedUser);
-      vi.mocked(bcrypt.hash).mockRejectedValue(hashError);
+      vi.mocked(mockPrisma.user.findUnique).mockResolvedValue(storedUser);
+      vi.mocked(bcrypt.compare as (data: string | Buffer, encrypted: string) => Promise<boolean>).mockRejectedValue(hashError);
 
       // 2. ACT & 3. ASSERT
-      await expect(findUserByEmailAndPassword(userInput)).rejects.toThrow(
-        hashError
-      );
+      await expect(
+        findUserByEmailAndPassword(mockPrisma, userInput)
+      ).rejects.toThrow(hashError);
     });
   });
 });

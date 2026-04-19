@@ -3,9 +3,9 @@
  * It imports modular route plugins and registers them with the main Fastify instance.
  */
 
-import { AppServer } from "../server";
-import userRoutes from "./user/user.route";
-import productRoutes from "./product/product.route";
+import { AppServer } from "../server.ts";
+import userRoutes from "./user/user.route.ts";
+import productRoutes from "./product/product.route.ts";
 
 /**
  * A Fastify plugin that aggregates all the application's modular routes.

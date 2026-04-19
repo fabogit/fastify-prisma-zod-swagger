@@ -5,9 +5,10 @@
  */
 
 import { describe, test, expect, beforeAll, afterAll } from "vitest";
-import { buildServer } from "../../app";
-import { AppServer } from "../../server";
-import prisma from "../../utils/prisma";
+import { buildServer } from "../../app.ts";
+import { AppServer } from "../../server.ts";
+import { ValidationIssue } from "../../utils/error.schema.ts";
+import { prisma } from "../../db.ts";
 
 describe("Product Routes", () => {
   let server: AppServer;
@@ -196,7 +197,9 @@ describe("Product Routes", () => {
         expect(response.statusCode).toBe(400);
         const payload = response.json();
         expect(payload.issues).toHaveLength(2); // 'name' and 'price' are missing
-        const fields = payload.issues.map((issue: any) => issue.field);
+        const fields = payload.issues.map(
+          (issue: ValidationIssue) => issue.field
+        );
         expect(fields).toContain("name");
         expect(fields).toContain("price");
       });

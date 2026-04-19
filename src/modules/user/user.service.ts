@@ -1,12 +1,7 @@
-/**
- * @file This file contains the business logic for the User module.
- * It interacts with the database and handles tasks like password hashing.
- */
-
 import bcrypt from "bcrypt";
-import prisma from "../../utils/prisma";
-import { createUserSchema, loginSchema } from "./user.schema";
+import { createUserSchema, loginSchema } from "./user.schema.ts";
 import { z } from "zod";
+import { PrismaClient } from "../../generated/client/client.js";
 
 // Infer types from Zod schemas to avoid duplication
 type CreateUserInput = z.infer<typeof createUserSchema.body>;
@@ -18,10 +13,11 @@ const DUMMY_SALT = "$2b$10$KwTCWmo0a0hZ6oLBF1hM5e";
 
 /**
  * Creates a new user in the database after hashing their password.
- * @param input - The user's registration data (email, name, password).
+ * @param prisma The Prisma client instance.
+ * @param input The user's registration data (email, name, password).
  * @returns The newly created user object, with sensitive data omitted.
  */
-async function createUser(input: CreateUserInput) {
+async function createUser(prisma: PrismaClient, input: CreateUserInput) {
   // Generate a salt and hash the password
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash(input.password, salt);
@@ -47,10 +43,14 @@ async function createUser(input: CreateUserInput) {
 
 /**
  * Attempts to find a user by their email and verify their password.
- * @param input - The user's login credentials (email, password).
+ * @param prisma The Prisma client instance.
+ * @param input The user's login credentials (email, password).
  * @returns The full user object if authentication is successful, otherwise null.
  */
-async function findUserByEmailAndPassword(input: LoginInput) {
+async function findUserByEmailAndPassword(
+  prisma: PrismaClient,
+  input: LoginInput
+) {
   // Find the user by their email address
   const user = await prisma.user.findUnique({
     where: { email: input.email },
@@ -64,11 +64,9 @@ async function findUserByEmailAndPassword(input: LoginInput) {
     return null;
   }
 
-  // Re-hash the incoming password with the user's stored salt to compare
-  const hashedPassword = await bcrypt.hash(input.password, user.salt);
-  const isMatch = hashedPassword === user.password;
+  // Verify the password using bcrypt.compare which is timing-attack safe
+  const isMatch = await bcrypt.compare(input.password, user.password);
 
-  // If passwords do not match, authentication fails
   if (!isMatch) {
     return null;
   }
@@ -77,5 +75,4 @@ async function findUserByEmailAndPassword(input: LoginInput) {
   return user;
 }
 
-// Export functions to be used by the controller
 export { createUser, findUserByEmailAndPassword };

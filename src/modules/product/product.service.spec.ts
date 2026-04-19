@@ -5,18 +5,16 @@
  */
 
 import { describe, test, expect, vi } from "vitest";
-import prisma from "../../utils/prisma";
-import { createProduct, getProducts } from "./product.service";
+import { createProduct, getProducts } from "./product.service.ts";
+import { PrismaClient } from "../../generated/client/client.js";
 
-// Mock the Prisma client module
-vi.mock("../../utils/prisma", () => ({
-  default: {
-    product: {
-      create: vi.fn(),
-      findMany: vi.fn(),
-    },
+// Create a mock Prisma instance
+const mockPrisma = {
+  product: {
+    create: vi.fn(),
+    findMany: vi.fn(),
   },
-}));
+} as unknown as PrismaClient;
 
 // Test suite for Product Service
 describe("Product Service", () => {
@@ -35,14 +33,14 @@ describe("Product Service", () => {
     };
 
     // Configure the mock to return our expected product when `create` is called
-    vi.mocked(prisma.product.create).mockResolvedValue(expectedProduct);
+    vi.mocked(mockPrisma.product.create).mockResolvedValue(expectedProduct);
 
     // 2. ACT
-    const result = await createProduct(input, ownerId);
+    const result = await createProduct(mockPrisma, input, ownerId);
 
     // 3. ASSERT
     // Check if prisma.product.create was called with the correct arguments
-    expect(prisma.product.create).toHaveBeenCalledWith({
+    expect(mockPrisma.product.create).toHaveBeenCalledWith({
       data: {
         name: input.name,
         price: input.price,
@@ -63,10 +61,12 @@ describe("Product Service", () => {
     const input = { name: "Test Product", price: 99.99 };
     const ownerId = 1;
     const dbError = new Error("Database Error");
-    vi.mocked(prisma.product.create).mockRejectedValue(dbError);
+    vi.mocked(mockPrisma.product.create).mockRejectedValue(dbError);
 
     // ACT & ASSERT
-    await expect(createProduct(input, ownerId)).rejects.toThrow(dbError);
+    await expect(createProduct(mockPrisma, input, ownerId)).rejects.toThrow(
+      dbError
+    );
   });
 
   // Test case for the getProducts function
@@ -94,16 +94,16 @@ describe("Product Service", () => {
     ];
 
     // Configure the mock to return our array when `findMany` is called
-    vi.mocked(prisma.product.findMany).mockResolvedValue(mockProducts);
+    vi.mocked(mockPrisma.product.findMany).mockResolvedValue(mockProducts);
 
     // 2. ACT
-    const result = await getProducts();
+    const result = await getProducts(mockPrisma);
 
     // 3. ASSERT
     // Check if the function returned the array of products
     expect(result).toEqual(mockProducts);
     // Check that findMany was called
-    expect(prisma.product.findMany).toHaveBeenCalledTimes(1);
+    expect(mockPrisma.product.findMany).toHaveBeenCalledTimes(1);
   });
 
   /**
@@ -113,9 +113,9 @@ describe("Product Service", () => {
   test("getProducts should throw if Prisma findMany fails", async () => {
     // ARRANGE
     const dbError = new Error("Database Error");
-    vi.mocked(prisma.product.findMany).mockRejectedValue(dbError);
+    vi.mocked(mockPrisma.product.findMany).mockRejectedValue(dbError);
 
     // ACT & ASSERT
-    await expect(getProducts()).rejects.toThrow(dbError);
+    await expect(getProducts(mockPrisma)).rejects.toThrow(dbError);
   });
 });
